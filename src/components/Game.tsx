@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useReducer, useState } from 'react';
+import { ReactNode, useEffect, useReducer, useRef, useState } from 'react';
 import { Config, Level, Player } from '../game/types';
 import { init, reduce } from '../game/state';
 import { aiCell, aiPair } from '../game/ai';
@@ -8,7 +8,7 @@ import { burst, centerOf, sfx, shake } from '../game/fx';
 import MahjongBoard from './MahjongBoard';
 import TicTacToe from './TicTacToe';
 
-interface Props { cfg: Config; wins: { p1: number; p2: number; draws: number }; onResult: (w: Player | 'draw') => void; onExit: () => void; onNext: () => void }
+interface Props { cfg: Config; wins: { p1: number; p2: number; draws: number }; soundEnabled: boolean; onResult: (w: Player | 'draw') => void; onExit: () => void; onNext: () => void }
 const LV: Record<Level, string> = { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', expert: 'Especialista', master: 'Mestre' };
 const COL = ['#ff7a59', '#4fe0c8'];
 
@@ -16,13 +16,36 @@ function Modal({ title, children }: { title: string; children: ReactNode }) {
   return <div className="overlay"><div className="modal"><h2>{title}</h2>{children}</div></div>;
 }
 
-export default function Game({ cfg, wins, onResult, onExit, onNext }: Props) {
+export default function Game({ cfg, wins, soundEnabled, onResult, onExit, onNext }: Props) {
   const [s, d] = useReducer(reduce, cfg, init);
   const [showEnd, setShowEnd] = useState(false);
+  const [musicOn, setMusicOn] = useState(true);
+  const musicRef = useRef<HTMLAudioElement>(null);
   const training = cfg.mode === 'training';
   const campaignStage = cfg.campaignStage ? CAMPAIGN_STAGES[cfg.campaignStage - 1] : undefined;
   const names = cfg.mode === 'ai' ? ['Você', `IA ${LV[cfg.level]}`] : training ? ['Treino', ''] : ['Jogador 1', 'Jogador 2'];
   const isAI = cfg.mode === 'ai' && s.turn === 1 && s.phase !== 'over';
+
+  useEffect(() => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    audio.volume = 0.28;
+    if (soundEnabled && musicOn && !s.paused) void audio.play().catch(() => {});
+    else audio.pause();
+  }, [soundEnabled, musicOn, s.paused]);
+
+  useEffect(() => () => musicRef.current?.pause(), []);
+
+  const toggleMusic = () => {
+    const audio = musicRef.current;
+    if (musicOn) {
+      if (audio?.paused && soundEnabled && !s.paused) void audio.play().catch(() => {});
+      else { audio?.pause(); setMusicOn(false); }
+    } else {
+      setMusicOn(true);
+      if (soundEnabled && !s.paused) void audio?.play().catch(() => {});
+    }
+  };
 
   // IA: escolhe par (2 toques) e depois a casa. O reducer valida tudo, igual para humanos.
   useEffect(() => {
@@ -74,8 +97,10 @@ export default function Game({ cfg, wins, onResult, onExit, onNext }: Props) {
       <header className="bar">
         <button className="ic" onClick={() => d({ t: 'pause', v: true })} aria-label="Pausar">⏸</button>
         <strong>{campaignStage ? `Fase ${campaignStage.id}/${CAMPAIGN_STAGES.length} · ${campaignStage.title}` : training ? 'Modo treino' : cfg.mode === 'ai' ? 'Contra a IA' : 'Dois jogadores'}</strong>
+        <button className={`ic music-control ${!musicOn || !soundEnabled ? 'muted' : ''}`} onClick={toggleMusic} aria-label={musicOn && soundEnabled ? 'Desativar música' : 'Ativar música'} title={musicOn && soundEnabled ? 'Desativar música' : 'Ativar música'}>♫</button>
         <button className="ic" onClick={() => d({ t: 'new', cfg })} aria-label="Reiniciar partida">↻</button>
       </header>
+      <audio ref={musicRef} src={new URL('../music/Jardim de Vidro.mp3', import.meta.url).href} loop preload="auto" />
       <section className="players">
         {([0, 1] as Player[]).filter((i) => !(training && i === 1)).map((i) => (
           <div key={i} className={`chip p${i} ${s.turn === i && s.phase !== 'over' ? 'active' : ''}`}>

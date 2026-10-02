@@ -48,7 +48,7 @@ export default function App() {
       {screen === 'campaign' && <CampaignPick unlocked={campaign.unlocked} completed={campaign.completed} start={startCampaign} back={() => setScreen('menu')} />}
       {screen === 'how' && <How back={() => setScreen('menu')} />}
       {screen === 'settings' && <SettingsScreen settings={settings} set={setSettings} reset={() => setStats(defaultStats())} back={() => setScreen('menu')} />}
-      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} onResult={onResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => startCampaign((cfg.campaignStage ?? 0) + 1)} />}
+      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} soundEnabled={settings.sound} onResult={onResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => startCampaign((cfg.campaignStage ?? 0) + 1)} />}
     </div>
   );
 }
