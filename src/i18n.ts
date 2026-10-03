@@ -107,7 +107,7 @@ export const brainBoostMessages: Record<Language, { title: string; text: string 
 
 export const translations = {
   pt: {
-    chooseLanguage: 'Escolha a língua',
+    chooseLanguage: 'Selecione o Idioma',
     menu: {
       play: 'Jogar',
       challenge: 'Desafio contra IA',
@@ -122,7 +122,7 @@ export const translations = {
       level: 'Dificuldade do botão Jogar',
       reset: 'Zerar placar',
       back: 'Voltar',
-      language: 'Escolha a língua',
+      language: 'Selecione o Idioma',
     },
     campaign: {
       title: 'Campanha',

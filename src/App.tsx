@@ -9,13 +9,15 @@ import { showRewardedAd } from './game/rewardAds';
 import Game from './components/Game';
 import { BackgroundsScreen, CampaignPick, How, LanguageScreen, LevelPick, Menu, SettingsScreen } from './components/Screens';
 import { Language, translations } from './i18n';
+import studioLogo from './iamgen/logo israel allen games.jpg';
 
-type Screen = 'language' | 'menu' | 'ailevel' | 'campaign' | 'backgrounds' | 'how' | 'settings' | 'game';
+type Screen = 'intro' | 'language' | 'menu' | 'ailevel' | 'campaign' | 'backgrounds' | 'how' | 'settings' | 'game';
 type SoloSupplies = { hints: number; shuffles: number };
 type BackgroundCollection = { unlockedCount: number; selectedId: number | null };
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('language');
+  const [screen, setScreen] = useState<Screen>('intro');
+  const [introLeaving, setIntroLeaving] = useState(false);
   const [cfg, setCfg] = useState<Config>({ mode: 'ai', level: 'medium' });
   const [language, setLanguage] = useState<Language>('pt');
   const [run, setRun] = useState(0); // muda a key do <Game> para remontar
@@ -38,6 +40,12 @@ export default function App() {
   useEffect(() => save('campaign', campaign), [campaign]);
   useEffect(() => save('solo-supplies', soloSupplies), [soloSupplies]);
   useEffect(() => save('backgrounds', backgroundCollection), [backgroundCollection]);
+  useEffect(() => {
+    if (screen !== 'intro') return;
+    const leaveTimer = window.setTimeout(() => setIntroLeaving(true), 2400);
+    const languageTimer = window.setTimeout(() => setScreen('language'), 3000);
+    return () => { window.clearTimeout(leaveTimer); window.clearTimeout(languageTimer); };
+  }, [screen]);
   useEffect(() => {
     const audio = musicRef.current;
     if (!audio) return;
@@ -131,6 +139,7 @@ export default function App() {
   return (
     <div className={`app ${selectedBackground ? 'custom-background' : ''}`} style={selectedBackground ? { backgroundImage: selectedBackground.image } : undefined}>
       <audio ref={musicRef} src={new URL('./music/Jardim de Vidro.mp3', import.meta.url).href} loop preload="auto" />
+      {screen === 'intro' && <div className={`intro-screen ${introLeaving ? 'is-leaving' : ''}`}><img src={studioLogo} alt="Israel Allen Games" /></div>}
       {screen === 'language' && <LanguageScreen language={language} onSelect={chooseLanguage} />}
       {screen === 'menu' && <Menu stats={stats} go={go} language={language} />}
       {screen === 'ailevel' && <LevelPick start={(l) => play('ai', l)} back={() => setScreen('menu')} language={language} />}

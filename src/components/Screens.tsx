@@ -12,7 +12,7 @@ export function LanguageScreen({ language, onSelect }: { language: Language; onS
       <div className="logo" aria-hidden>
         <span>✕</span><span className="j">🀄</span><span>○</span>
       </div>
-      <h1>Escolha a língua</h1>
+      <h1>Selecione o Idioma</h1>
       <p className="sub">Select your language · Elige tu idioma · Choisissez votre langue</p>
       {LANGUAGES.map(({ code, label }) => (
         <button key={code} className="btn" onClick={() => onSelect(code)}>{label}</button>

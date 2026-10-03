@@ -6,6 +6,10 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .app{min-height:100%;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);display:flex;justify-content:center}
 .app.custom-background{background-size:cover;background-position:center;background-attachment:fixed}
+.intro-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:#07090e;background-image:radial-gradient(ellipse at 50% 50%,rgba(116,42,32,.2),transparent 58%),linear-gradient(135deg,rgba(242,193,78,.035),transparent 48%,rgba(47,191,155,.035));transition:opacity .6s ease,visibility .6s ease}
+.intro-screen img{display:block;width:min(90vw,980px);max-height:84vh;object-fit:contain;mix-blend-mode:screen;opacity:0;transform:scale(.88);filter:brightness(.5);animation:studio-reveal 2.4s cubic-bezier(.2,.75,.2,1) forwards}
+.intro-screen.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
+@keyframes studio-reveal{0%{opacity:0;transform:scale(.88);filter:brightness(.45) drop-shadow(0 0 0 rgba(242,193,78,0))}38%{opacity:1;filter:brightness(1.2) drop-shadow(0 0 30px rgba(242,193,78,.55))}72%,100%{opacity:1;transform:scale(1);filter:brightness(1) drop-shadow(0 0 15px rgba(242,193,78,.28))}}
 .screen{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;justify-content:center;padding:24px 0}
 .menu{text-align:center}.menu h1{font-size:2.4rem;margin:0;letter-spacing:.5px}.sub{margin:0 0 12px;color:var(--mute)}
 .logo{display:flex;justify-content:center;align-items:center;gap:14px;font-size:2.4rem}
