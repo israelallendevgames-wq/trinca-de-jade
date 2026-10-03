@@ -8,7 +8,7 @@ import { burst, centerOf, sfx, shake } from '../game/fx';
 import { showRewardedAd } from '../game/rewardAds';
 import MahjongBoard, { TileFace } from './MahjongBoard';
 import TicTacToe from './TicTacToe';
-import { Language, translations } from '../i18n';
+import { brainBoostMessages, Language, translations } from '../i18n';
 
 interface Props { cfg: Config; wins: { p1: number; p2: number; draws: number }; soloSupplies: { hints: number; shuffles: number }; onUseSoloSupply: (supply: 'hints' | 'shuffles') => void; onEarnSoloSupply: (supply: 'hints' | 'shuffles') => void; soundEnabled: boolean; musicOn: boolean; toggleMusic: () => void; onGamePaused: (paused: boolean) => void; onResult: (w: Player | 'draw') => void; onSoloResult: (completed: boolean, stage?: number) => void; onExit: () => void; onNext: () => void; language: Language }
 const LV: Record<Level, string> = { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', expert: 'Especialista', master: 'Mestre' };
@@ -58,6 +58,8 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
   const levelName = (level: Level) => ({ easy: t.levels.easy, medium: t.levels.medium, hard: t.levels.hard } as Record<Level, string>)[level];
   const names = cfg.mode === 'ai' ? [t.game.you, cfg.aiDifficulty === undefined ? `${t.game.ai} ${levelName(cfg.level)}` : `${t.game.ai} ${cfg.aiDifficulty}`] : [t.game.player1, t.game.player2];
   const isAI = cfg.mode === 'ai' && s.turn === 1 && s.phase !== 'over' && s.phase !== 'penalty';
+  const motivationStage = solo ? (cfg.campaignStage ?? 1) : Math.max(1, Math.min(8, Math.round((cfg.difficulty ?? 0) / 12)));
+  const brainBoost = brainBoostMessages[language][Math.max(0, Math.min(brainBoostMessages[language].length - 1, motivationStage - 1))];
 
   useEffect(() => {
     onGamePaused(s.paused);
@@ -219,6 +221,12 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
         <div className="timer-level"><b>NÍVEL {cfg.campaignStage ?? 1}</b><small>DIFICULDADE {cfg.difficulty ?? 0}/100</small></div>
       </div>}
       <p className="status" role="status">{s.msg ? `${s.msg} · ` : ''}{status}</p>
+      {brainBoost && (
+        <div className="brain-tip" aria-live="polite">
+          <strong>{brainBoost.title}</strong>
+          <span>{brainBoost.text}</span>
+        </div>
+      )}
       <div className={`stage ${solo ? 'solo-stage' : ''}`}>
         <MahjongBoard tiles={s.tiles} sel={s.sel} hint={s.hint} faceDown={cfg.faceDown} revealed={s.revealed} onTap={selectTile} />
         {solo && <div className="solo-rack" aria-label={`Espaço de peças: ${s.rack.length} de 4`}>

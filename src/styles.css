@@ -67,6 +67,9 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .chip.p0 b{color:var(--p0)}.chip.p1 b{color:var(--p1)}
 .chip.active{border-color:var(--gold);background:rgba(242,193,78,.14);transform:scale(1.03)}
 .status{margin:0;text-align:center;min-height:2.6em;color:var(--gold);font-weight:600}
+.brain-tip{display:grid;gap:4px;padding:12px 14px;border:1px solid rgba(47,191,155,.35);border-radius:12px;background:rgba(47,191,155,.08);color:var(--ink);text-align:center}
+.brain-tip strong{font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;color:var(--p1)}
+.brain-tip span{font-size:.84rem;line-height:1.45;color:var(--mute)}
 .stage{display:grid;gap:16px;justify-items:center;align-items:start}
 @media(min-width:820px){.stage{grid-template-columns:1.6fr 1fr}}
 .stage.solo-stage{grid-template-columns:1fr}
