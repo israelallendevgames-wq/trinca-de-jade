@@ -2,6 +2,12 @@ import { Level, Tile } from './types';
 
 export const SP = { star: '⭐', brk: '💥' };
 const NORMAL = ['🌸', '🍃', '🔥', '💧', '🌙', '🍒', '🐟', '🔔'];
+const NEW_MOTIFS = [
+  'beast:lion', 'beast:dragon', 'beast:bear', 'beast:snake', 'beast:tiger', 'beast:scorpion', 'beast:wolf', 'beast:eagle', 'beast:panther', 'beast:boar', 'beast:kirin', 'beast:gorilla', 'beast:phoenix', 'beast:crocodile', 'beast:rhinoceros',
+  'nature:sun', 'nature:wind', 'nature:lightning', 'nature:earth', 'nature:wave', 'nature:forest', 'nature:lotus', 'nature:metal',
+  'gem:jade', 'gem:ruby', 'gem:sapphire', 'gem:amethyst', 'gem:emerald', 'gem:diamond', 'gem:pearl', 'gem:topaz', 'gem:quartz', 'gem:turquoise', 'gem:opal', 'gem:obsidian', 'gem:citrine',
+];
+NORMAL.push(...NEW_MOTIFS);
 
 export interface CampaignStage {
   id: number;
@@ -97,7 +103,8 @@ export function newBoard(stage?: number, layout?: [number, number, number][]): T
   const coords = layout ?? (stage === undefined ? classic : (CAMPAIGN_STAGES[stage - 1] ?? CAMPAIGN_STAGES[0]).layout);
   const base: Tile[] = coords.map(([x, y, z], id) => ({ id, x, y, z, sym: '', removed: false }));
   const bag = [SP.star, SP.star, SP.star, SP.brk, SP.brk];
-  for (let i = 0; bag.length < base.length / 2; i++) bag.push(NORMAL[i % NORMAL.length]);
+  const symbols = shuffle(NORMAL);
+  for (let i = 0; bag.length < base.length / 2; i++) bag.push(symbols[i % symbols.length]);
   return retry(base, bag);
 }
 

@@ -82,11 +82,16 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .tile{position:absolute;background:linear-gradient(145deg,#fffaf0,#e5d5b4);border-radius:9px;box-shadow:0 4px 0 #aa9366,0 6px 8px rgba(0,0,0,.35);display:grid;place-items:center;padding:0;
   transition:transform .18s,opacity .3s,filter .2s,box-shadow .2s}
 .tile-face{position:absolute;inset:5%;display:block;overflow:hidden;border:1px solid #c4ad80;border-radius:5px;background:linear-gradient(145deg,#fffdf5,#f1e6cc);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),inset 0 -3px 5px rgba(111,82,37,.08);color:#174b3c;font-family:"Yu Mincho","Noto Serif JP","Hiragino Mincho ProN",serif;pointer-events:none}
+.tile-face.motif{border-color:#aa9366;background:linear-gradient(145deg,#fffdf5,#f1e6cc);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),inset 0 -3px 5px rgba(111,82,37,.08);color:#174b3c}
+.tile-image{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;border-radius:inherit}
 .tile-back{position:absolute;inset:5%;overflow:hidden;border:1px solid #c4ad80;border-radius:5px;background:repeating-linear-gradient(45deg,#174b3c 0 4px,#24614c 4px 8px);box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),inset 0 -3px 5px rgba(0,0,0,.2);pointer-events:none}
 .tile-back:after{content:"";position:absolute;inset:25%;border:2px double rgba(242,193,78,.85);border-radius:50%;box-shadow:0 0 0 3px rgba(242,193,78,.18)}
 .tile-face:after{content:"";position:absolute;inset:3px;border:1px solid rgba(168,66,48,.27);border-radius:3px}
+.tile-face.motif:after{border-color:rgba(191,157,96,.48);box-shadow:inset 0 0 0 1px rgba(191,157,96,.1)}
 .tile-code{position:absolute;z-index:1;left:9%;top:6%;font-size:2.5cqw;line-height:1;color:#982f32;font-weight:800}
+.tile-face.motif .tile-code{color:#982f32;text-shadow:none}
 .tile-caption{position:absolute;z-index:1;right:7%;bottom:4%;font-size:2cqw;line-height:1;color:#997747}
+.tile-face.motif .tile-caption{color:#997747}
 .tile-art{position:absolute;left:50%;top:51%;transform:translate(-50%,-50%)}
 .tile-art.bamboo{width:62%;height:58%;display:flex;align-items:center;justify-content:center;gap:8%}
 .bamboo-rod{position:relative;display:block;width:18%;height:88%;border:1px solid #32674b;border-radius:99px;background:linear-gradient(90deg,#9ac582 0%,#4e9062 35%,#d5dda0 52%,#45835a 100%);box-shadow:0 1px 1px rgba(24,62,41,.25)}
@@ -100,6 +105,10 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .dots-2 .pip:first-child{grid-column:2;grid-row:1}.dots-2 .pip:nth-child(2){grid-column:1;grid-row:2}
 .dots-3 .pip:first-child{grid-column:2;grid-row:1}.dots-3 .pip:nth-child(2){grid-column:1;grid-row:2}.dots-3 .pip:nth-child(3){grid-column:2;grid-row:2}
 .tile-art.honor-mark,.tile-art.special-mark{font-size:9cqw;line-height:1;font-weight:900;text-shadow:0 1px rgba(255,255,255,.7)}
+.tile-art.motif-mark{display:grid;place-items:center;width:72%;aspect-ratio:1;border:1px double rgba(151,119,68,.7);border-radius:50%;background:radial-gradient(circle,#fffaf0,#e8dcc4 78%);box-shadow:0 0 0 3px rgba(151,119,68,.12),inset 0 0 8px rgba(111,82,37,.12);font-size:8cqw;line-height:1;font-weight:900;color:#43372d;text-shadow:0 1px rgba(255,255,255,.8)}
+.tile-face.animal .motif-mark{color:#812f36;border-color:rgba(153,65,55,.75);text-shadow:0 1px rgba(255,255,255,.8)}
+.tile-face.nature .motif-mark{color:#205c48;border-color:rgba(66,123,87,.75);text-shadow:0 1px rgba(255,255,255,.8)}
+.tile-face.gem .motif-mark{color:#345a76;border-color:rgba(87,117,145,.75);text-shadow:0 1px rgba(255,255,255,.8)}
 .tile-face.wind .honor-mark{color:#263b3a}.tile-face.red-dragon .honor-mark{color:#ba3434}.tile-face.green-dragon .honor-mark{color:#27845e}
 .tile-face.bonus-star{background:linear-gradient(145deg,#fff8db,#f3dda3)}.tile-face.bonus-break{background:linear-gradient(145deg,#fff2e8,#f2c5ad)}
 .tile-art.special-mark{color:#a33d3b}.tile-art.special-mark.break-mark{color:#bd3436;font-size:10cqw}
