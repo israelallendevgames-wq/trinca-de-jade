@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Config, Level, Mode, Player } from './game/types';
 import { Settings, Stats, defaultStats, load, save } from './game/store';
 import { setSound } from './game/fx';
-import { difficultyForWins } from './game/ai';
-import { CAMPAIGN_STAGES, CHALLENGE_LAYOUT, HARDER_LEVEL_LAYOUT, campaignDifficulty } from './game/tiles';
+import { difficultyForWins, levelAtDifficulty } from './game/ai';
+import { CAMPAIGN_STAGES, CHALLENGE_LAYOUT, HARDER_LEVEL_LAYOUT, MAX_CHALLENGE_ROUND, campaignDifficulty, challengeLayout } from './game/tiles';
 import { BACKGROUND_COUNT, GAME_BACKGROUNDS } from './game/backgrounds';
 import { showRewardedAd } from './game/rewardAds';
 import Game from './components/Game';
@@ -24,12 +24,17 @@ export default function App() {
   const musicRef = useRef<HTMLAudioElement>(null);
   const [settings, setSettings] = useState<Settings>(() => load<Settings>('settings', { sound: true, level: 'medium' }));
   const [stats, setStats] = useState<Stats>(() => load<Stats>('stats', defaultStats()));
+  const [challengeRound, setChallengeRound] = useState(() => {
+    const saved = load<{ round: number }>('challenge-round', { round: 1 }).round;
+    return Math.max(1, Math.min(MAX_CHALLENGE_ROUND, Math.floor(saved) || 1));
+  });
   const [campaign, setCampaign] = useState(() => load<{ unlocked: number; completed: boolean }>('campaign', { unlocked: 1, completed: false }));
   const [soloSupplies, setSoloSupplies] = useState<SoloSupplies>(() => load<SoloSupplies>('solo-supplies', { hints: 5, shuffles: 5 }));
   const [backgroundCollection, setBackgroundCollection] = useState<BackgroundCollection>(() => load<BackgroundCollection>('backgrounds', { unlockedCount: 0, selectedId: null }));
 
   useEffect(() => { save('settings', settings); setSound(settings.sound); }, [settings]);
   useEffect(() => save('stats', stats), [stats]);
+  useEffect(() => save('challenge-round', { round: challengeRound }), [challengeRound]);
   useEffect(() => save('campaign', campaign), [campaign]);
   useEffect(() => save('solo-supplies', soloSupplies), [soloSupplies]);
   useEffect(() => save('backgrounds', backgroundCollection), [backgroundCollection]);
@@ -69,9 +74,16 @@ export default function App() {
     setRun((r) => r + 1);
     setScreen('game');
   };
+  const startChallenge = () => {
+    const challengeDifficulty = challengeRound;
+    setCfg({ mode: 'ai', level: 'hard', aiDifficulty: challengeDifficulty, boardLayout: challengeLayout(challengeRound), faceDown: levelAtDifficulty(challengeDifficulty) === 'hard', challengeRound });
+    setRun((r) => r + 1);
+    setScreen('game');
+  };
   const onResult = (w: Player | 'draw') => {
     if (cfg.mode === 'solo') return;
     setStats((s) => ({ ...s, [cfg.mode]: { ...s[cfg.mode], p1: s[cfg.mode].p1 + (w === 0 ? 1 : 0), p2: s[cfg.mode].p2 + (w === 1 ? 1 : 0), draws: s[cfg.mode].draws + (w === 'draw' ? 1 : 0) } }));
+    if (cfg.challengeRound !== undefined && w === 0) setChallengeRound((round) => Math.min(MAX_CHALLENGE_ROUND, Math.max(round, cfg.challengeRound! + 1)));
     if (cfg.campaignStage && w === 0) setCampaign((p) => ({
       unlocked: Math.max(p.unlocked, Math.min(CAMPAIGN_STAGES.length, cfg.campaignStage! + 1)),
       completed: p.completed || cfg.campaignStage === CAMPAIGN_STAGES.length,
@@ -107,12 +119,7 @@ export default function App() {
   };
   const go = (a: string) => {
     if (a === 'play') play('ai');
-    else if (a === 'challenge') {
-      const challengeLevel = 'hard';
-      setCfg({ mode: 'ai', level: challengeLevel, aiDifficulty: difficultyForWins(stats.ai.p1), boardLayout: HARDER_LEVEL_LAYOUT, faceDown: true });
-      setRun((r) => r + 1);
-      setScreen('game');
-    }
+    else if (a === 'challenge') startChallenge();
     else setScreen(a as Screen);
   };
   const startCampaign = (stage: number) => {
@@ -130,8 +137,8 @@ export default function App() {
       {screen === 'campaign' && <CampaignPick unlocked={campaign.unlocked} completed={campaign.completed} aiDifficulty={difficultyForWins(stats.ai.p1)} start={startCampaign} back={() => setScreen('menu')} language={language} />}
       {screen === 'backgrounds' && <BackgroundsScreen unlockedCount={backgroundCollection.unlockedCount} selectedId={backgroundCollection.selectedId} onSelect={(selectedId) => setBackgroundCollection((current) => ({ ...current, selectedId }))} onUnlock={unlockBackground} back={() => setScreen('menu')} language={language} />}
       {screen === 'how' && <How back={() => setScreen('menu')} />}
-      {screen === 'settings' && <SettingsScreen settings={settings} set={setSettings} reset={() => setStats(defaultStats())} back={() => setScreen('menu')} language={language} setLanguage={setLanguage} />}
-      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} soloSupplies={soloSupplies} onUseSoloSupply={useSoloSupply} onEarnSoloSupply={earnSoloSupply} soundEnabled={settings.sound} musicOn={musicOn} toggleMusic={() => setMusicOn((on) => !on)} onGamePaused={setGamePaused} onResult={onResult} onSoloResult={onSoloResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => startCampaign((cfg.campaignStage ?? 0) + 1)} language={language} />}
+      {screen === 'settings' && <SettingsScreen settings={settings} set={setSettings} reset={() => { setStats(defaultStats()); setChallengeRound(1); }} back={() => setScreen('menu')} language={language} setLanguage={setLanguage} />}
+      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} soloSupplies={soloSupplies} onUseSoloSupply={useSoloSupply} onEarnSoloSupply={earnSoloSupply} soundEnabled={settings.sound} musicOn={musicOn} toggleMusic={() => setMusicOn((on) => !on)} onGamePaused={setGamePaused} onResult={onResult} onSoloResult={onSoloResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => cfg.challengeRound ? startChallenge() : startCampaign((cfg.campaignStage ?? 0) + 1)} language={language} />}
     </div>
   );
 }

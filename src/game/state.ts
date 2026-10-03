@@ -35,7 +35,10 @@ export function reduce(s: State, a: Action): State {
     case 'new': return init(a.cfg);
     case 'pause': return { ...s, paused: a.v };
     case 'miss': return s.phase === 'penalty' ? { ...s, phase: 'pick', turn: opp(s.turn), revealed: [], msg: 'Par incorreto: turno perdido' } : s;
-    case 'timeout': return s.cfg.mode === 'solo' && s.phase === 'pick' ? { ...s, phase: 'timeout', msg: 'Tempo esgotado' } : s;
+    case 'timeout':
+      if (s.cfg.mode === 'solo' && s.phase === 'pick') return { ...s, phase: 'timeout', msg: 'Tempo esgotado' };
+      if (s.cfg.challengeRound !== undefined && !s.paused && s.phase !== 'over' && s.phase !== 'timeout') return { ...s, phase: 'pick', turn: opp(s.turn), sel: null, revealed: [], hint: null, pending: 'norm', msg: 'Tempo esgotado' };
+      return s;
     case 'hint': {
       if (s.paused || s.phase !== 'pick') return s;
       const ps = freePairs(s.tiles);

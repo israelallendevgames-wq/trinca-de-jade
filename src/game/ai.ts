@@ -7,7 +7,7 @@ const empty = (g: Cell[]) => g.map((c, i) => (c === null ? i : -1)).filter((i) =
 
 export const difficultyForWins = (wins: number): number => Math.min(100, Math.max(1, Math.floor(wins) + 1));
 
-const levelAtDifficulty = (difficulty: number): Level =>
+export const levelAtDifficulty = (difficulty: number): Level =>
   difficulty <= 20 ? 'easy' : difficulty <= 40 ? 'medium' : difficulty <= 60 ? 'hard' : difficulty <= 80 ? 'expert' : 'master';
 
 /** Escolha do par: fácil = aleatório; médio = gosta de ⭐; difícil = pesa o que libera para o rival. */

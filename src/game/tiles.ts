@@ -58,6 +58,17 @@ export const HARDER_LEVEL_LAYOUT: [number, number, number][] = (() => {
 export const campaignDifficulty = (stage: number) => Math.round((stage - 1) * 100 / (CAMPAIGN_STAGES.length - 1));
 
 export const BOARD_W = 16, BOARD_H = 8;
+export const MAX_CHALLENGE_ROUND = Math.floor((HARDER_LEVEL_LAYOUT.length - 16) / 2) + 1;
+
+export function challengeLayout(round: number): [number, number, number][] {
+  const count = Math.min(HARDER_LEVEL_LAYOUT.length, Math.max(16, 16 + (Math.floor(round) - 1) * 2));
+  const centerX = (BOARD_W - 2) / 2, centerY = BOARD_H / 2;
+  return [...HARDER_LEVEL_LAYOUT]
+    .sort((a, b) => a[2] - b[2] ||
+      ((a[0] - centerX) ** 2 + (a[1] - centerY) ** 2) - ((b[0] - centerX) ** 2 + (b[1] - centerY) ** 2) ||
+      a[1] - b[1] || a[0] - b[0])
+    .slice(0, count);
+}
 
 const shuffle = <T,>(a: T[]): T[] => {
   const r = [...a];

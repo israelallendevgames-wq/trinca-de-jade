@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useReducer, useState } from 'react';
+import { ReactNode, useEffect, useReducer, useRef, useState } from 'react';
 import { Config, Level, Player } from '../game/types';
 import { init, reduce } from '../game/state';
 import { aiCell, aiPair } from '../game/ai';
@@ -48,10 +48,12 @@ function flyTile(source: HTMLElement, target: HTMLElement, impact = false) {
 
 export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnSoloSupply, soundEnabled, musicOn, toggleMusic, onGamePaused, onResult, onSoloResult, onExit, onNext, language }: Props) {
   const [s, d] = useReducer(reduce, cfg, init);
+  const previousTurn = useRef(s.turn);
   const [showEnd, setShowEnd] = useState(false);
   const [adBusy, setAdBusy] = useState(false);
   const [adMessage, setAdMessage] = useState('');
-  const [timeLeft, setTimeLeft] = useState(() => moveSeconds(cfg.difficulty));
+  const challenge = cfg.mode === 'ai' && cfg.challengeRound !== undefined;
+  const [timeLeft, setTimeLeft] = useState(() => challenge ? 60 : moveSeconds(cfg.difficulty));
   const t = translations[language];
   const solo = cfg.mode === 'solo';
   const campaignStage = cfg.campaignStage ? CAMPAIGN_STAGES[cfg.campaignStage - 1] : undefined;
@@ -87,16 +89,23 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
   }, [s.phase, s.paused]);
 
   useEffect(() => {
-    if (!solo || s.phase !== 'pick' || s.paused) return;
+    const running = solo ? s.phase === 'pick' : challenge && s.phase !== 'over' && s.phase !== 'timeout';
+    if (!running || s.paused) return;
     const id = window.setInterval(() => setTimeLeft((time) => Math.max(0, time - 1)), 1000);
     return () => clearInterval(id);
-  }, [solo, s.phase, s.paused, s.tiles]);
+  }, [solo, challenge, s.phase, s.paused]);
+
+  useEffect(() => {
+    if (challenge && previousTurn.current !== s.turn) setTimeLeft(60);
+    previousTurn.current = s.turn;
+  }, [challenge, s.turn]);
 
   useEffect(() => { if (solo) setTimeLeft(moveSeconds(cfg.difficulty)); }, [solo, cfg.difficulty, s.tiles]);
 
   useEffect(() => {
-    if (solo && s.phase === 'pick' && !s.paused && timeLeft === 0) d({ t: 'timeout' });
-  }, [solo, s.phase, s.paused, timeLeft]);
+    if (s.paused || timeLeft !== 0) return;
+    if (solo && s.phase === 'pick' || challenge && s.phase !== 'over' && s.phase !== 'timeout') d({ t: 'timeout' });
+  }, [solo, challenge, s.phase, s.paused, timeLeft]);
 
   useEffect(() => { if (s.sel !== null) sfx('select'); }, [s.sel]);
 
@@ -118,7 +127,7 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
   }, [s.ev]);
 
   useEffect(() => {
-    if (s.phase === 'complete' || s.phase === 'timeout' || s.phase === 'rackfull' || s.phase === 'stuck') {
+    if (solo && (s.phase === 'complete' || s.phase === 'timeout' || s.phase === 'rackfull' || s.phase === 'stuck')) {
       onSoloResult(s.phase === 'complete', cfg.campaignStage);
       const id = window.setTimeout(() => setShowEnd(true), 400);
       return () => clearTimeout(id);
@@ -130,7 +139,8 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
   }, [s.phase]);
 
   const human = !isAI && !s.paused && s.phase !== 'penalty';
-  const timerProgress = Math.max(0, Math.min(1, timeLeft / moveSeconds(cfg.difficulty)));
+  const timerDuration = challenge ? 60 : moveSeconds(cfg.difficulty);
+  const timerProgress = Math.max(0, Math.min(1, timeLeft / timerDuration));
   const status =
     s.phase === 'over' ? t.game.status.end :
     s.phase === 'complete' ? t.game.status.levelComplete :
@@ -175,6 +185,10 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
     d({ t: 'shuffle' });
     onUseSoloSupply('shuffles');
   };
+  const restartGame = () => {
+    setTimeLeft(challenge ? 60 : moveSeconds(cfg.difficulty));
+    d({ t: 'new', cfg });
+  };
   const requestSupplyAd = async (supply: 'hints' | 'shuffles') => {
     if (adBusy) return;
     setAdBusy(true);
@@ -195,7 +209,7 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
         <button className="ic" onClick={() => d({ t: 'pause', v: true })} aria-label={t.game.pause}>⏸</button>
         <strong>{campaignStage ? `Fase ${campaignStage.id}/${CAMPAIGN_STAGES.length} · ${campaignStage.title}` : cfg.mode === 'ai' ? t.game.againstAI : t.game.twoPlayers}</strong>
         <button className={`ic music-control ${!musicOn || !soundEnabled ? 'muted' : ''}`} onClick={toggleMusic} aria-label={musicOn && soundEnabled ? t.game.musicOff : t.game.musicOn} title={musicOn && soundEnabled ? t.game.musicOff : t.game.musicOn}>♫</button>
-        <button className="ic" onClick={() => d({ t: 'new', cfg })} aria-label={t.game.restart}>↻</button>
+        <button className="ic" onClick={restartGame} aria-label={t.game.restart}>↻</button>
       </header>
       <section className="players">
         {([0, 1] as Player[]).filter((i) => !(solo && i === 1)).map((i) => (
@@ -206,7 +220,7 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
           </div>
         ))}
       </section>
-      {solo && <div className={`move-timer ${timeLeft <= 8 ? 'urgent' : ''}`} role="timer" aria-label={`${timeLeft} segundos restantes`}>
+      {(solo || challenge) && <div className={`move-timer ${timeLeft <= 8 ? 'urgent' : ''}`} role="timer" aria-label={`${timeLeft} ${t.game.seconds}`}>
         <svg className="hourglass-illustration" viewBox="0 0 48 48" aria-hidden="true">
           <defs>
             <clipPath id="top-sand-clip"><rect x="12" y="8" width="24" height={16 * timerProgress} /></clipPath>
@@ -217,8 +231,8 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
           <path className="hourglass-sand lower" clipPath="url(#bottom-sand-clip)" d="M14 39h20c-1-6-4-10-10-13-6 3-9 7-10 13Z" />
           <path className="hourglass-stream" d="M24 22v5" />
         </svg>
-        <div className="timer-count"><strong>{timeLeft}<small>s</small></strong><span>SEGUNDOS</span></div>
-        <div className="timer-level"><b>NÍVEL {cfg.campaignStage ?? 1}</b><small>DIFICULDADE {cfg.difficulty ?? 0}/100</small></div>
+        <div className="timer-count"><strong>{timeLeft}<small>s</small></strong><span>{t.game.seconds}</span></div>
+        <div className="timer-level">{challenge ? <><b>{t.game.round} {cfg.challengeRound}</b><small>{s.tiles.length} {t.game.pieces}</small></> : <><b>NÍVEL {cfg.campaignStage ?? 1}</b><small>DIFICULDADE {cfg.difficulty ?? 0}/100</small></>}</div>
       </div>}
       <p className="status" role="status">{s.msg ? `${s.msg} · ` : ''}{status}</p>
       {brainBoost && (
@@ -227,7 +241,7 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
           <span>{brainBoost.text}</span>
         </div>
       )}
-      <div className={`stage ${solo ? 'solo-stage' : ''}`}>
+      <div className={`stage ${solo ? 'solo-stage' : 'challenge-stage'}`}>
         <MahjongBoard tiles={s.tiles} sel={s.sel} hint={s.hint} faceDown={cfg.faceDown} revealed={s.revealed} onTap={selectTile} />
         {solo && <div className="solo-rack" aria-label={`Espaço de peças: ${s.rack.length} de 4`}>
           <div className="rack-heading"><b>PEÇAS SELECIONADAS</b><small>{s.rack.length}/4</small></div>
@@ -255,16 +269,17 @@ export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnS
       {s.paused && (
         <Modal title={t.game.paused}>
           <button className="btn" onClick={() => d({ t: 'pause', v: false })}>{t.game.continue}</button>
-          <button className="btn ghost" onClick={() => d({ t: 'new', cfg })}>{t.game.restartMatch}</button>
+          <button className="btn ghost" onClick={restartGame}>{t.game.restartMatch}</button>
           <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : t.game.menu}</button>
         </Modal>
       )}
       {showEnd && (
         <Modal title={result}>
           <p className="final">{solo ? `Pontuação: ${s.scores[0]} · Jogadas: ${s.moves}` : `${names[0]} ${s.scores[0]} × ${s.scores[1]} ${names[1]}`}</p>
+          {challenge && s.phase === 'over' && s.winner === 0 && <button className="btn" onClick={onNext}>{t.game.nextRound}</button>}
           {solo && s.phase === 'complete' && cfg.campaignStage && cfg.campaignStage < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>{t.game.next}</button>}
           {campaignStage && s.winner === 0 && campaignStage.id < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>{t.game.nextStage}</button>}
-          <button className="btn" onClick={() => d({ t: 'new', cfg })}>{solo ? s.phase === 'complete' ? 'Repetir nível' : t.game.tryAgain : t.game.again}</button>
+          <button className="btn" onClick={restartGame}>{solo ? s.phase === 'complete' ? 'Repetir nível' : t.game.tryAgain : challenge && s.phase === 'timeout' ? t.game.tryAgain : t.game.again}</button>
           <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : t.game.menu}</button>
         </Modal>
       )}
