@@ -4,14 +4,20 @@ import { Settings, Stats, defaultStats, load, save } from './game/store';
 import { setSound } from './game/fx';
 import { difficultyForWins } from './game/ai';
 import { CAMPAIGN_STAGES, CHALLENGE_LAYOUT, campaignDifficulty } from './game/tiles';
+import { BACKGROUND_COUNT, GAME_BACKGROUNDS } from './game/backgrounds';
+import { showRewardedAd } from './game/rewardAds';
 import Game from './components/Game';
-import { CampaignPick, How, LevelPick, Menu, SettingsScreen } from './components/Screens';
+import { BackgroundsScreen, CampaignPick, How, LanguageScreen, LevelPick, Menu, SettingsScreen } from './components/Screens';
+import { Language, translations } from './i18n';
 
-type Screen = 'menu' | 'ailevel' | 'campaign' | 'how' | 'settings' | 'game';
+type Screen = 'language' | 'menu' | 'ailevel' | 'campaign' | 'backgrounds' | 'how' | 'settings' | 'game';
+type SoloSupplies = { hints: number; shuffles: number };
+type BackgroundCollection = { unlockedCount: number; selectedId: number | null };
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [screen, setScreen] = useState<Screen>('language');
   const [cfg, setCfg] = useState<Config>({ mode: 'ai', level: 'medium' });
+  const [language, setLanguage] = useState<Language>('pt');
   const [run, setRun] = useState(0); // muda a key do <Game> para remontar
   const [musicOn, setMusicOn] = useState(true);
   const [gamePaused, setGamePaused] = useState(false);
@@ -19,10 +25,14 @@ export default function App() {
   const [settings, setSettings] = useState<Settings>(() => load<Settings>('settings', { sound: true, level: 'medium' }));
   const [stats, setStats] = useState<Stats>(() => load<Stats>('stats', defaultStats()));
   const [campaign, setCampaign] = useState(() => load<{ unlocked: number; completed: boolean }>('campaign', { unlocked: 1, completed: false }));
+  const [soloSupplies, setSoloSupplies] = useState<SoloSupplies>(() => load<SoloSupplies>('solo-supplies', { hints: 5, shuffles: 5 }));
+  const [backgroundCollection, setBackgroundCollection] = useState<BackgroundCollection>(() => load<BackgroundCollection>('backgrounds', { unlockedCount: 0, selectedId: null }));
 
   useEffect(() => { save('settings', settings); setSound(settings.sound); }, [settings]);
   useEffect(() => save('stats', stats), [stats]);
   useEffect(() => save('campaign', campaign), [campaign]);
+  useEffect(() => save('solo-supplies', soloSupplies), [soloSupplies]);
+  useEffect(() => save('backgrounds', backgroundCollection), [backgroundCollection]);
   useEffect(() => {
     const audio = musicRef.current;
     if (!audio) return;
@@ -48,12 +58,18 @@ export default function App() {
   }, [settings.sound, musicOn, gamePaused]);
 
   const play = (mode: Mode, level: Level = settings.level) => {
-    setCfg({ mode, level, aiDifficulty: mode === 'ai' ? difficultyForWins(stats.ai.p1) : undefined });
+    const harderLevels: Level[] = ['hard', 'expert', 'master'];
+    setCfg({
+      mode,
+      level,
+      aiDifficulty: mode === 'ai' ? difficultyForWins(stats.ai.p1) : undefined,
+      faceDown: mode === 'ai' && harderLevels.includes(level),
+    });
     setRun((r) => r + 1);
     setScreen('game');
   };
   const onResult = (w: Player | 'draw') => {
-    if (cfg.mode === 'training' || cfg.mode === 'solo') return;
+    if (cfg.mode === 'solo') return;
     setStats((s) => ({ ...s, [cfg.mode]: { ...s[cfg.mode], p1: s[cfg.mode].p1 + (w === 0 ? 1 : 0), p2: s[cfg.mode].p2 + (w === 1 ? 1 : 0), draws: s[cfg.mode].draws + (w === 'draw' ? 1 : 0) } }));
     if (cfg.campaignStage && w === 0) setCampaign((p) => ({
       unlocked: Math.max(p.unlocked, Math.min(CAMPAIGN_STAGES.length, cfg.campaignStage! + 1)),
@@ -67,6 +83,27 @@ export default function App() {
       completed: p.completed || stage === CAMPAIGN_STAGES.length,
     }));
   };
+  const useSoloSupply = (supply: keyof SoloSupplies) => {
+    setSoloSupplies((current) => ({ ...current, [supply]: Math.max(0, current[supply] - 1) }));
+  };
+  const earnSoloSupply = (supply: keyof SoloSupplies) => {
+    setSoloSupplies((current) => ({ ...current, [supply]: current[supply] + 1 }));
+  };
+  const unlockBackground = async () => {
+    const result = await showRewardedAd('background-unlock');
+    if (result === 'rewarded') setBackgroundCollection((current) => {
+      if (current.unlockedCount >= BACKGROUND_COUNT) return current;
+      const unlockedCount = current.unlockedCount + 1;
+      return { unlockedCount, selectedId: unlockedCount };
+    });
+    return result;
+  };
+  const selectedBackground = GAME_BACKGROUNDS.find((background) => background.id === backgroundCollection.selectedId);
+  const t = translations[language];
+  const chooseLanguage = (selected: Language) => {
+    setLanguage(selected);
+    setScreen('menu');
+  };
   const go = (a: string) => {
     if (a === 'play') play('ai');
     else if (a === 'challenge') {
@@ -74,7 +111,6 @@ export default function App() {
       setRun((r) => r + 1);
       setScreen('game');
     }
-    else if (a === 'training') play(a);
     else setScreen(a as Screen);
   };
   const startCampaign = (stage: number) => {
@@ -84,14 +120,16 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${selectedBackground ? 'custom-background' : ''}`} style={selectedBackground ? { backgroundImage: selectedBackground.image } : undefined}>
       <audio ref={musicRef} src={new URL('./music/Jardim de Vidro.mp3', import.meta.url).href} loop preload="auto" />
-      {screen === 'menu' && <Menu stats={stats} go={go} />}
-      {screen === 'ailevel' && <LevelPick start={(l) => play('ai', l)} back={() => setScreen('menu')} />}
-      {screen === 'campaign' && <CampaignPick unlocked={campaign.unlocked} completed={campaign.completed} aiDifficulty={difficultyForWins(stats.ai.p1)} start={startCampaign} back={() => setScreen('menu')} />}
+      {screen === 'language' && <LanguageScreen language={language} onSelect={chooseLanguage} />}
+      {screen === 'menu' && <Menu stats={stats} go={go} language={language} />}
+      {screen === 'ailevel' && <LevelPick start={(l) => play('ai', l)} back={() => setScreen('menu')} language={language} />}
+      {screen === 'campaign' && <CampaignPick unlocked={campaign.unlocked} completed={campaign.completed} aiDifficulty={difficultyForWins(stats.ai.p1)} start={startCampaign} back={() => setScreen('menu')} language={language} />}
+      {screen === 'backgrounds' && <BackgroundsScreen unlockedCount={backgroundCollection.unlockedCount} selectedId={backgroundCollection.selectedId} onSelect={(selectedId) => setBackgroundCollection((current) => ({ ...current, selectedId }))} onUnlock={unlockBackground} back={() => setScreen('menu')} language={language} />}
       {screen === 'how' && <How back={() => setScreen('menu')} />}
-      {screen === 'settings' && <SettingsScreen settings={settings} set={setSettings} reset={() => setStats(defaultStats())} back={() => setScreen('menu')} />}
-      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} soundEnabled={settings.sound} musicOn={musicOn} toggleMusic={() => setMusicOn((on) => !on)} onGamePaused={setGamePaused} onResult={onResult} onSoloResult={onSoloResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => startCampaign((cfg.campaignStage ?? 0) + 1)} />}
+      {screen === 'settings' && <SettingsScreen settings={settings} set={setSettings} reset={() => setStats(defaultStats())} back={() => setScreen('menu')} language={language} setLanguage={setLanguage} />}
+      {screen === 'game' && <Game key={run} cfg={cfg} wins={stats[cfg.mode]} soloSupplies={soloSupplies} onUseSoloSupply={useSoloSupply} onEarnSoloSupply={earnSoloSupply} soundEnabled={settings.sound} musicOn={musicOn} toggleMusic={() => setMusicOn((on) => !on)} onGamePaused={setGamePaused} onResult={onResult} onSoloResult={onSoloResult} onExit={() => setScreen(cfg.campaignStage ? 'campaign' : 'menu')} onNext={() => startCampaign((cfg.campaignStage ?? 0) + 1)} language={language} />}
     </div>
   );
 }

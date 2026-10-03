@@ -1,4 +1,4 @@
-export type Mode = 'ai' | 'pvp' | 'training' | 'solo';
+export type Mode = 'ai' | 'pvp' | 'solo';
 export type Level = 'easy' | 'medium' | 'hard' | 'expert' | 'master';
 export type Player = 0 | 1;
 export type Cell = Player | null;

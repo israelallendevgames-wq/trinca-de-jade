@@ -5,13 +5,19 @@ import { aiCell, aiPair } from '../game/ai';
 import { isFree } from '../game/tiles';
 import { CAMPAIGN_STAGES } from '../game/tiles';
 import { burst, centerOf, sfx, shake } from '../game/fx';
+import { showRewardedAd } from '../game/rewardAds';
 import MahjongBoard, { TileFace } from './MahjongBoard';
 import TicTacToe from './TicTacToe';
+import { Language, translations } from '../i18n';
 
-interface Props { cfg: Config; wins: { p1: number; p2: number; draws: number }; soundEnabled: boolean; musicOn: boolean; toggleMusic: () => void; onGamePaused: (paused: boolean) => void; onResult: (w: Player | 'draw') => void; onSoloResult: (completed: boolean, stage?: number) => void; onExit: () => void; onNext: () => void }
+interface Props { cfg: Config; wins: { p1: number; p2: number; draws: number }; soloSupplies: { hints: number; shuffles: number }; onUseSoloSupply: (supply: 'hints' | 'shuffles') => void; onEarnSoloSupply: (supply: 'hints' | 'shuffles') => void; soundEnabled: boolean; musicOn: boolean; toggleMusic: () => void; onGamePaused: (paused: boolean) => void; onResult: (w: Player | 'draw') => void; onSoloResult: (completed: boolean, stage?: number) => void; onExit: () => void; onNext: () => void; language: Language }
 const LV: Record<Level, string> = { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', expert: 'Especialista', master: 'Mestre' };
 const COL = ['#ff7a59', '#4fe0c8'];
 const moveSeconds = (difficulty = 0) => Math.max(15, 60 - Math.round(difficulty * 0.45));
+
+function Modal({ title, children }: { title: string; children: ReactNode }) {
+  return <div className="overlay"><div className="modal"><h2>{title}</h2>{children}</div></div>;
+}
 
 function flyTile(source: HTMLElement, target: HTMLElement, impact = false) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -26,7 +32,7 @@ function flyTile(source: HTMLElement, target: HTMLElement, impact = false) {
   const dx = to.left + to.width / 2 - (from.left + from.width / 2);
   const dy = to.top + to.height / 2 - (from.top + from.height / 2);
   const scale = Math.min(to.width / from.width, to.height / from.height);
-  const animation = clone.animate(impact ? [
+  const frames = impact ? [
     { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
     { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 1, offset: 0.78 },
     { transform: `translate(${dx - 5}px, ${dy}px) scale(${scale * 1.08}) rotate(-6deg)`, opacity: 1, offset: 0.87 },
@@ -34,23 +40,23 @@ function flyTile(source: HTMLElement, target: HTMLElement, impact = false) {
   ] : [
     { transform: 'translate(0, 0) scale(1)', opacity: 1 },
     { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 1 },
-  ], { duration: impact ? 440 : 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
+  ];
+  const animation = clone.animate(frames, { duration: impact ? 440 : 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
   animation.onfinish = () => clone.remove();
   window.setTimeout(() => clone.remove(), 520);
 }
 
-function Modal({ title, children }: { title: string; children: ReactNode }) {
-  return <div className="overlay"><div className="modal"><h2>{title}</h2>{children}</div></div>;
-}
-
-export default function Game({ cfg, wins, soundEnabled, musicOn, toggleMusic, onGamePaused, onResult, onSoloResult, onExit, onNext }: Props) {
+export default function Game({ cfg, wins, soloSupplies, onUseSoloSupply, onEarnSoloSupply, soundEnabled, musicOn, toggleMusic, onGamePaused, onResult, onSoloResult, onExit, onNext, language }: Props) {
   const [s, d] = useReducer(reduce, cfg, init);
   const [showEnd, setShowEnd] = useState(false);
+  const [adBusy, setAdBusy] = useState(false);
+  const [adMessage, setAdMessage] = useState('');
   const [timeLeft, setTimeLeft] = useState(() => moveSeconds(cfg.difficulty));
-  const training = cfg.mode === 'training';
+  const t = translations[language];
   const solo = cfg.mode === 'solo';
   const campaignStage = cfg.campaignStage ? CAMPAIGN_STAGES[cfg.campaignStage - 1] : undefined;
-  const names = cfg.mode === 'ai' ? ['Você', cfg.aiDifficulty === undefined ? `IA ${LV[cfg.level]}` : `IA nível ${cfg.aiDifficulty}`] : training ? ['Treino', ''] : ['Jogador 1', 'Jogador 2'];
+  const levelName = (level: Level) => ({ easy: t.levels.easy, medium: t.levels.medium, hard: t.levels.hard } as Record<Level, string>)[level];
+  const names = cfg.mode === 'ai' ? [t.game.you, cfg.aiDifficulty === undefined ? `${t.game.ai} ${levelName(cfg.level)}` : `${t.game.ai} ${cfg.aiDifficulty}`] : [t.game.player1, t.game.player2];
   const isAI = cfg.mode === 'ai' && s.turn === 1 && s.phase !== 'over' && s.phase !== 'penalty';
 
   useEffect(() => {
@@ -95,37 +101,10 @@ export default function Game({ cfg, wins, soundEnabled, musicOn, toggleMusic, on
   // Efeitos visuais e sonoros reagem aos eventos do reducer.
   useEffect(() => {
     const e = s.ev; if (!e) return;
-    if (e.type === 'match') { sfx('match'); e.ids.forEach((i) => { const c = centerOf(`[data-tile="${i}"]`); if (c) burst(c[0], c[1], '#f2c14e'); }); }
-        if (e.type === 'match') {
-          sfx(solo ? 'domino' : 'match');
-          if (solo && e.cell !== undefined) { const c = centerOf(`[data-rack-slot="${e.cell}"]`); if (c) burst(c[0], c[1], '#f2c14e', 10); }
-          else e.ids.forEach((i) => { const c = centerOf(`[data-tile="${i}"]`); if (c) burst(c[0], c[1], '#f2c14e'); });
-        }
-
-    function flyTile(source: HTMLElement, target: HTMLElement, impact = false) {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const from = source.getBoundingClientRect(), to = target.getBoundingClientRect();
-      const clone = source.cloneNode(true) as HTMLElement;
-      clone.removeAttribute('data-tile'); clone.removeAttribute('data-rack-slot');
-      Object.assign(clone.style, {
-        position: 'fixed', left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`,
-        margin: '0', zIndex: '9999', pointerEvents: 'none', transform: 'none', transition: 'none', opacity: '1',
-      });
-      document.body.appendChild(clone);
-      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      const scale = Math.min(to.width / from.width, to.height / from.height);
-      const animation = clone.animate(impact ? [
-        { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 1, offset: 0.78 },
-        { transform: `translate(${dx - 5}px, ${dy}px) scale(${scale * 1.08}) rotate(-6deg)`, opacity: 1, offset: 0.87 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${scale * 0.72})`, opacity: 0, offset: 1 },
-      ] : [
-        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 1 },
-      ], { duration: impact ? 440 : 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
-      animation.onfinish = () => clone.remove();
-      window.setTimeout(() => clone.remove(), 520);
+    if (e.type === 'match') {
+      sfx(solo ? 'domino' : 'match');
+      if (solo && e.cell !== undefined) { const c = centerOf(`[data-rack-slot="${e.cell}"]`); if (c) burst(c[0], c[1], '#f2c14e', 10); }
+      else e.ids.forEach((i) => { const c = centerOf(`[data-tile="${i}"]`); if (c) burst(c[0], c[1], '#f2c14e'); });
     }
     if (e.type === 'invalid') { sfx('invalid'); e.ids.forEach((i) => shake(document.querySelector(`[data-tile="${i}"]`))); if (e.cell !== undefined) shake(document.querySelector(`[data-cell="${e.cell}"]`)); }
     if (e.type === 'mark' || e.type === 'erase') { sfx(e.type === 'mark' ? 'place' : 'erase'); const c = centerOf(`[data-cell="${e.cell}"]`); if (c) burst(c[0], c[1], COL[s.turn === 0 ? 1 : 0], 10); }
@@ -151,17 +130,17 @@ export default function Game({ cfg, wins, soundEnabled, musicOn, toggleMusic, on
   const human = !isAI && !s.paused && s.phase !== 'penalty';
   const timerProgress = Math.max(0, Math.min(1, timeLeft / moveSeconds(cfg.difficulty)));
   const status =
-    s.phase === 'over' ? 'Fim de jogo' :
-    s.phase === 'complete' ? 'Nível concluído!' :
-    s.phase === 'timeout' ? 'Tempo esgotado' :
-    s.phase === 'rackfull' ? 'Espaço cheio: tente outra combinação' :
-    s.phase === 'stuck' ? 'Sem mais combinações disponíveis' :
-    s.phase === 'penalty' ? 'Par incorreto: turno perdido' :
-    s.phase === 'pick' ? (isAI ? 'A IA está escolhendo um par…' : `${names[s.turn]}: toque em duas peças iguais e livres`) :
-    s.pending === 'brk' ? `💥 Quebra! ${isAI ? 'A IA joga…' : 'Marque uma casa vazia ou apague uma marca rival'}` :
-    s.pending === 'star' ? `⭐ Bônus! ${isAI ? 'A IA joga…' : 'Escolha uma casa'}` : isAI ? 'A IA está escolhendo a casa…' : 'Par feito! Escolha uma casa do 3x3';
+    s.phase === 'over' ? t.game.status.end :
+    s.phase === 'complete' ? t.game.status.levelComplete :
+    s.phase === 'timeout' ? t.game.status.timeout :
+    s.phase === 'rackfull' ? t.game.status.rackfull :
+    s.phase === 'stuck' ? t.game.status.stuck :
+    s.phase === 'penalty' ? t.game.status.penalty :
+    s.phase === 'pick' ? (isAI ? t.game.status.aiPick : t.game.status.pick.replace('{name}', names[s.turn])) :
+    s.pending === 'brk' ? t.game.status.brk.replace('{who}', isAI ? t.game.ai : 'marque uma casa vazia ou apague uma marca rival') :
+    s.pending === 'star' ? t.game.status.star.replace('{who}', isAI ? t.game.ai : 'escolha uma casa') : isAI ? t.game.status.aiPlace : t.game.status.place;
 
-  const result = solo ? (s.phase === 'complete' ? 'Nível concluído!' : s.phase === 'rackfull' ? 'Espaço cheio!' : s.phase === 'stuck' ? 'Sem combinações!' : 'Tempo esgotado!') : s.winner === 'draw' ? 'Empate!' : s.winner === null ? '' : cfg.mode === 'ai' ? (s.winner === 0 ? 'Você venceu! 🎉' : 'A IA venceu') : `${names[s.winner]} venceu! 🎉`;
+  const result = solo ? (s.phase === 'complete' ? t.game.status.levelComplete : s.phase === 'rackfull' ? 'Espaço cheio!' : s.phase === 'stuck' ? 'Sem combinações!' : t.game.status.timeout) : s.winner === 'draw' ? t.game.draw : s.winner === null ? '' : cfg.mode === 'ai' ? (s.winner === 0 ? t.game.youWon : t.game.aiWon) : `${names[s.winner]} venceu! 🎉`;
 
   const selectTile = (id: number) => {
     if (!human) return;
@@ -184,21 +163,44 @@ export default function Game({ cfg, wins, soundEnabled, musicOn, toggleMusic, on
     }
     d({ t: 'sel', id });
   };
+  const useHint = () => {
+    if (solo && soloSupplies.hints === 0) return;
+    d({ t: 'hint' });
+    if (solo) onUseSoloSupply('hints');
+  };
+  const useShuffle = () => {
+    if (soloSupplies.shuffles === 0) return;
+    d({ t: 'shuffle' });
+    onUseSoloSupply('shuffles');
+  };
+  const requestSupplyAd = async (supply: 'hints' | 'shuffles') => {
+    if (adBusy) return;
+    setAdBusy(true);
+    setAdMessage('');
+    const result = await showRewardedAd(supply === 'hints' ? 'extra-hint' : 'extra-shuffle');
+    setAdBusy(false);
+    if (result === 'rewarded') {
+      onEarnSoloSupply(supply);
+      setAdMessage(supply === 'hints' ? '+1 dica adicionada.' : '+1 embaralhamento adicionado.');
+    } else {
+      setAdMessage(result === 'unavailable' ? 'Anúncios recompensados indisponíveis neste dispositivo.' : 'Assista ao anúncio até o fim para receber a recompensa.');
+    }
+  };
 
   return (
     <div className="game">
       <header className="bar">
-        <button className="ic" onClick={() => d({ t: 'pause', v: true })} aria-label="Pausar">⏸</button>
-        <strong>{campaignStage ? `Fase ${campaignStage.id}/${CAMPAIGN_STAGES.length} · ${campaignStage.title}` : training ? 'Modo treino' : cfg.mode === 'ai' ? 'Contra a IA' : 'Dois jogadores'}</strong>
-        <button className={`ic music-control ${!musicOn || !soundEnabled ? 'muted' : ''}`} onClick={toggleMusic} aria-label={musicOn && soundEnabled ? 'Desativar música' : 'Ativar música'} title={musicOn && soundEnabled ? 'Desativar música' : 'Ativar música'}>♫</button>
-        <button className="ic" onClick={() => d({ t: 'new', cfg })} aria-label="Reiniciar partida">↻</button>
+        <button className="ic" onClick={() => d({ t: 'pause', v: true })} aria-label={t.game.pause}>⏸</button>
+        <strong>{campaignStage ? `Fase ${campaignStage.id}/${CAMPAIGN_STAGES.length} · ${campaignStage.title}` : cfg.mode === 'ai' ? t.game.againstAI : t.game.twoPlayers}</strong>
+        <button className={`ic music-control ${!musicOn || !soundEnabled ? 'muted' : ''}`} onClick={toggleMusic} aria-label={musicOn && soundEnabled ? t.game.musicOff : t.game.musicOn} title={musicOn && soundEnabled ? t.game.musicOff : t.game.musicOn}>♫</button>
+        <button className="ic" onClick={() => d({ t: 'new', cfg })} aria-label={t.game.restart}>↻</button>
       </header>
       <section className="players">
-        {([0, 1] as Player[]).filter((i) => !((training || solo) && i === 1)).map((i) => (
+        {([0, 1] as Player[]).filter((i) => !(solo && i === 1)).map((i) => (
           <div key={i} className={`chip p${i} ${s.turn === i && s.phase !== 'over' ? 'active' : ''}`}>
             <b>{i === 0 ? '✕' : '○'} {names[i]}</b>
-            <span className="pts">{s.scores[i]} pts</span>
-            <small>{i === 0 ? wins.p1 : wins.p2} vitórias</small>
+            <span className="pts">{s.scores[i]} {t.game.points}</span>
+            <small>{i === 0 ? wins.p1 : wins.p2} {t.game.wins}</small>
           </div>
         ))}
       </section>
@@ -233,23 +235,29 @@ export default function Game({ cfg, wins, soundEnabled, musicOn, toggleMusic, on
           onPick={(cell) => human && d({ t: 'place', cell })} />}
       </div>
       <footer className="foot">
-        <button className="btn ghost" disabled={!human || s.phase !== 'pick'} onClick={() => d({ t: 'hint' })}>💡 Dica{training ? '' : ' (−5)'}</button>
+        <button className="btn ghost" disabled={!human || s.phase !== 'pick' || (solo && soloSupplies.hints === 0)} onClick={useHint}>{solo ? `💡 Dica (${soloSupplies.hints})` : '💡 Dica (−5)'}</button>
+        {solo && <button className="btn ghost" disabled={!human || s.phase !== 'pick' || soloSupplies.shuffles === 0} onClick={useShuffle}>🔀 Embaralhar ({soloSupplies.shuffles})</button>}
+        {solo && <div className="reward-ad-actions">
+          <button className="btn ghost ad-reward" disabled={adBusy} onClick={() => requestSupplyAd('hints')}>{adBusy ? 'Carregando anúncio…' : 'Ver anúncio para +1 dica'}</button>
+          <button className="btn ghost ad-reward" disabled={adBusy} onClick={() => requestSupplyAd('shuffles')}>{adBusy ? 'Carregando anúncio…' : 'Ver anúncio para +1 embaralhamento'}</button>
+          {adMessage && <p className="reward-ad-message" role="status">{adMessage}</p>}
+        </div>}
       </footer>
 
       {s.paused && (
-        <Modal title="Pausado">
-          <button className="btn" onClick={() => d({ t: 'pause', v: false })}>Continuar</button>
-          <button className="btn ghost" onClick={() => d({ t: 'new', cfg })}>Reiniciar</button>
-          <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : 'Menu principal'}</button>
+        <Modal title={t.game.paused}>
+          <button className="btn" onClick={() => d({ t: 'pause', v: false })}>{t.game.continue}</button>
+          <button className="btn ghost" onClick={() => d({ t: 'new', cfg })}>{t.game.restartMatch}</button>
+          <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : t.game.menu}</button>
         </Modal>
       )}
       {showEnd && (
         <Modal title={result}>
-          <p className="final">{solo ? `Pontuação: ${s.scores[0]} · Jogadas: ${s.moves}` : training ? `Pontuação: ${s.scores[0]}` : `${names[0]} ${s.scores[0]} × ${s.scores[1]} ${names[1]}`}</p>
-          {solo && s.phase === 'complete' && cfg.campaignStage && cfg.campaignStage < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>Próximo nível →</button>}
-          {campaignStage && s.winner === 0 && campaignStage.id < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>Próxima fase →</button>}
-          <button className="btn" onClick={() => d({ t: 'new', cfg })}>{solo ? s.phase === 'complete' ? 'Repetir nível' : 'Tentar novamente' : 'Jogar novamente'}</button>
-          <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : 'Menu principal'}</button>
+          <p className="final">{solo ? `Pontuação: ${s.scores[0]} · Jogadas: ${s.moves}` : `${names[0]} ${s.scores[0]} × ${s.scores[1]} ${names[1]}`}</p>
+          {solo && s.phase === 'complete' && cfg.campaignStage && cfg.campaignStage < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>{t.game.next}</button>}
+          {campaignStage && s.winner === 0 && campaignStage.id < CAMPAIGN_STAGES.length && <button className="btn" onClick={onNext}>{t.game.nextStage}</button>}
+          <button className="btn" onClick={() => d({ t: 'new', cfg })}>{solo ? s.phase === 'complete' ? 'Repetir nível' : t.game.tryAgain : t.game.again}</button>
+          <button className="btn ghost" onClick={onExit}>{campaignStage ? 'Mapa da campanha' : t.game.menu}</button>
         </Modal>
       )}
     </div>

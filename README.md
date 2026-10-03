@@ -16,3 +16,6 @@ npm run build    # produção em /dist
 
 ## Celular (app nativo)
 `npm i @capacitor/core @capacitor/cli && npx cap init && npm run build && npx cap add android`
+
+## Anúncios recompensados
+Unidades extras de dica/embaralhamento e planos de fundo são creditados somente após `window.RewardedAdBridge.showRewardedAd(placement)` retornar `rewarded`. Os usos aceitos são `extra-hint`, `extra-shuffle` e `background-unlock`; cada anúncio de fundo libera somente o próximo tema da coleção. A ponte Android deve usar um anúncio recompensado do AdMob e confirmar conclusão pelo SDK. Fechar ou não carregar não concede recompensa. Esta versão Vite não inclui o plugin nativo nem IDs de anúncio; sem a ponte, a coleção continua bloqueada e a interface informa que anúncios estão indisponíveis.

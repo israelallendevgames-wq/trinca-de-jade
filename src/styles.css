@@ -5,6 +5,7 @@ body{font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink)
 button{font:inherit;color:inherit;cursor:pointer;border:0}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .app{min-height:100%;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);display:flex;justify-content:center}
+.app.custom-background{background-size:cover;background-position:center;background-attachment:fixed}
 .screen{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;justify-content:center;padding:24px 0}
 .menu{text-align:center}.menu h1{font-size:2.4rem;margin:0;letter-spacing:.5px}.sub{margin:0 0 12px;color:var(--mute)}
 .logo{display:flex;justify-content:center;align-items:center;gap:14px;font-size:2.4rem}
@@ -35,6 +36,17 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .stage-copy{display:grid;gap:3px;min-width:0}.stage-copy b{font-size:.98rem}.stage-copy small{color:var(--mute);font-size:.72rem;line-height:1.25}
 .stage-state{color:var(--gold);font-size:.72rem;font-weight:700;white-space:nowrap}.stage-card.done .stage-state{color:var(--p1)}
 .campaign-complete{margin:0;color:var(--gold);font-weight:700}
+.background-screen{max-width:960px;justify-content:flex-start;padding-top:clamp(18px,4vh,40px)}
+.background-title-row{display:flex;justify-content:space-between;align-items:center;gap:16px}.background-title-row h2{margin:0 0 4px}.background-title-row .sub{margin:0}
+.background-unlock-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.background-unlock-row .campaign-entry{flex:1}.original-background.selected{color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.background-message{margin:0;color:var(--mute);font-size:.85rem}
+.background-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;max-height:62vh;overflow:auto;padding:2px 4px 6px 2px;overscroll-behavior:contain}
+.background-card{display:grid;gap:7px;min-width:0;padding:7px;text-align:left;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(5,15,18,.56);transition:transform .15s,border-color .15s}
+.background-card:not(:disabled):hover{transform:translateY(-2px);border-color:var(--gold)}.background-card:disabled{cursor:not-allowed}
+.background-card.selected{border-color:var(--gold);box-shadow:0 0 0 1px rgba(242,193,78,.45)}
+.background-preview{display:block;width:100%;aspect-ratio:16/9;border-radius:6px;background-color:var(--bg);background-size:cover;background-position:center}
+.background-card.locked .background-preview{filter:saturate(.5) brightness(.68)}
+.background-card-label{display:grid;gap:3px;min-width:0}.background-card-label b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem}.background-card-label small{color:var(--mute);font-size:.68rem}
 /* jogo */
 .game{width:100%;max-width:980px;display:flex;flex-direction:column;gap:10px;padding:8px 0}
 .bar{display:flex;justify-content:space-between;align-items:center}
@@ -104,7 +116,10 @@ button{font:inherit;color:inherit;cursor:pointer;border:0}
 .cell.win{background:var(--gold);color:#222;animation:win .6s infinite alternate}
 .mk{animation:pop .25s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{from{transform:scale(0)}}@keyframes pulse2{to{background:rgba(242,193,78,.45)}}@keyframes win{to{transform:scale(1.1)}}
-.foot{display:flex;justify-content:center}
+.foot{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.reward-ad-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:2px}
+.btn.ad-reward{padding:9px 12px;font-size:.82rem;background:rgba(242,193,78,.12);box-shadow:0 2px 0 rgba(102,71,20,.65);color:#ffe7a3}
+.reward-ad-message{width:100%;margin:0;text-align:center;color:var(--mute);font-size:.78rem}
 .overlay{position:fixed;inset:0;background:rgba(5,20,20,.75);display:grid;place-items:center;z-index:50;padding:20px;animation:fade .25s}
 .modal{background:var(--bg2);border:2px solid var(--gold);border-radius:20px;padding:24px;width:min(340px,100%);display:grid;gap:12px;text-align:center;animation:pop .3s}
 .modal h2{margin:0;font-size:1.7rem}.final{margin:0;color:var(--mute)}

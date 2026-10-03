@@ -11,7 +11,7 @@ export interface State {
 }
 export type Action =
   | { t: 'new'; cfg: Config } | { t: 'sel'; id: number } | { t: 'place'; cell: number }
-  | { t: 'hint' } | { t: 'pause'; v: boolean } | { t: 'miss' } | { t: 'timeout' };
+  | { t: 'hint' } | { t: 'shuffle' } | { t: 'pause'; v: boolean } | { t: 'miss' } | { t: 'timeout' };
 
 const makeBoard = (cfg: Config) => newBoard(cfg.campaignStage, cfg.boardLayout);
 
@@ -41,8 +41,15 @@ export function reduce(s: State, a: Action): State {
       const ps = freePairs(s.tiles);
       const p = ps[Math.floor(Math.random() * ps.length)];
       const scores: [number, number] = [...s.scores];
-      if (s.cfg.mode !== 'training') scores[s.turn] = Math.max(0, scores[s.turn] - 5);
+      scores[s.turn] = Math.max(0, scores[s.turn] - 5);
       return { ...s, hint: p, scores, sel: null, ev: ev(s, 'hint', p) };
+    }
+    case 'shuffle': {
+      if (s.paused || s.phase !== 'pick' || s.cfg.mode !== 'solo') return s;
+      const tiles = reshuffle(s.tiles);
+      return tiles === s.tiles
+        ? { ...s, msg: 'Não foi possível embaralhar as peças' }
+        : { ...s, tiles, sel: null, revealed: [], hint: null, msg: 'Peças embaralhadas' };
     }
     case 'sel': {
       if (s.paused || s.phase !== 'pick') return s;
@@ -67,7 +74,7 @@ export function reduce(s: State, a: Action): State {
       if (o.sym !== t.sym) return s.cfg.faceDown
         ? { ...s, sel: null, revealed: [o.id, t.id], phase: 'penalty', ev: ev(s, 'invalid', [o.id, t.id]) }
         : { ...s, sel: null, ev: ev(s, 'invalid', [o.id, t.id]) };
-      const kind: Pending = t.sym === SP.star ? 'star' : t.sym === SP.brk && s.cfg.mode !== 'training' ? 'brk' : 'norm';
+      const kind: Pending = t.sym === SP.star ? 'star' : t.sym === SP.brk ? 'brk' : 'norm';
       const scores: [number, number] = [...s.scores];
       scores[s.turn] += kind === 'star' ? 20 : kind === 'brk' ? 15 : 10;
       const remaining = s.tiles.map((x) => (x.id === o.id || x.id === t.id ? { ...x, removed: true } : x));
@@ -87,7 +94,7 @@ export function reduce(s: State, a: Action): State {
         return { ...s, grid, scores, phase: 'over', winner: me, line, ev: ev(s, 'win', [], a.cell) };
       }
       if (grid.every((x) => x !== null)) return { ...s, grid, phase: 'over', winner: 'draw', ev: ev(s, 'draw') };
-      return { ...s, grid, phase: 'pick', pending: 'norm', turn: s.cfg.mode === 'training' ? 0 : opp(me), ev: ev(s, erase ? 'erase' : 'mark', [], a.cell) };
+      return { ...s, grid, phase: 'pick', pending: 'norm', turn: opp(me), ev: ev(s, erase ? 'erase' : 'mark', [], a.cell) };
     }
   }
 }
