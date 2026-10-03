@@ -33,6 +33,22 @@ export const CAMPAIGN_STAGES: CampaignStage[] = [
   { id: 8, title: 'Trono imperial', subtitle: 'Cinco camadas e combinações cada vez mais exigentes.', aiLevel: 'master', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 4, 10, 3], [3, 6, 8, 4], [5, 8, 10, 2]) },
 ];
 
+export const HARDER_LEVEL_LAYOUT: [number, number, number][] = (() => {
+  const coords: [number, number, number][] = [];
+  const layers = [
+    { z: 0, ys: [0, 2, 4, 6, 8], xStart: 0, xEnd: 14 },
+    { z: 1, ys: [2, 4, 6], xStart: 2, xEnd: 12 },
+    { z: 2, ys: [2, 4, 6], xStart: 0, xEnd: 14 },
+    { z: 3, ys: [4, 6], xStart: 2, xEnd: 12 },
+    { z: 4, ys: [6], xStart: 4, xEnd: 10 },
+  ];
+  for (const { z, ys, xStart, xEnd } of layers) {
+    for (const y of ys) for (let x = xStart; x <= xEnd; x += 2) coords.push([x, y, z]);
+  }
+  coords.push([0, 8, 1], [14, 8, 1]);
+  return coords;
+})();
+
 export const campaignDifficulty = (stage: number) => Math.round((stage - 1) * 100 / (CAMPAIGN_STAGES.length - 1));
 
 export const BOARD_W = 16, BOARD_H = 8;

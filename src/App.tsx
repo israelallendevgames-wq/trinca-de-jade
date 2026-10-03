@@ -3,7 +3,7 @@ import { Config, Level, Mode, Player } from './game/types';
 import { Settings, Stats, defaultStats, load, save } from './game/store';
 import { setSound } from './game/fx';
 import { difficultyForWins } from './game/ai';
-import { CAMPAIGN_STAGES, CHALLENGE_LAYOUT, campaignDifficulty } from './game/tiles';
+import { CAMPAIGN_STAGES, CHALLENGE_LAYOUT, HARDER_LEVEL_LAYOUT, campaignDifficulty } from './game/tiles';
 import { BACKGROUND_COUNT, GAME_BACKGROUNDS } from './game/backgrounds';
 import { showRewardedAd } from './game/rewardAds';
 import Game from './components/Game';
@@ -63,6 +63,7 @@ export default function App() {
       mode,
       level,
       aiDifficulty: mode === 'ai' ? difficultyForWins(stats.ai.p1) : undefined,
+      boardLayout: mode === 'ai' && harderLevels.includes(level) ? HARDER_LEVEL_LAYOUT : undefined,
       faceDown: mode === 'ai' && harderLevels.includes(level),
     });
     setRun((r) => r + 1);
@@ -107,7 +108,8 @@ export default function App() {
   const go = (a: string) => {
     if (a === 'play') play('ai');
     else if (a === 'challenge') {
-      setCfg({ mode: 'ai', level: 'easy', aiDifficulty: difficultyForWins(stats.ai.p1), boardLayout: CHALLENGE_LAYOUT, faceDown: true });
+      const challengeLevel = 'hard';
+      setCfg({ mode: 'ai', level: challengeLevel, aiDifficulty: difficultyForWins(stats.ai.p1), boardLayout: HARDER_LEVEL_LAYOUT, faceDown: true });
       setRun((r) => r + 1);
       setScreen('game');
     }

@@ -21,6 +21,7 @@ export const translations = {
       settings: 'Configurações',
       backgrounds: 'Planos de fundo',
       stats: 'Contra a IA: {p1} vitórias · {p2} derrotas · {p3} empates',
+      slogan: 'Exercite sua mente, mantenha o cérebro ativo e fortaleça a saúde da memória.',
     },
     settings: {
       title: 'Configurações',
@@ -97,6 +98,7 @@ export const translations = {
       settings: 'Settings',
       backgrounds: 'Backgrounds',
       stats: 'Vs AI: {p1} wins · {p2} losses · {p3} draws',
+      slogan: 'Exercise your mind, keep your brain active and strengthen memory health.',
     },
     settings: {
       title: 'Settings',
@@ -173,6 +175,7 @@ export const translations = {
       settings: 'Ajustes',
       backgrounds: 'Fondos',
       stats: 'Contra la IA: {p1} victorias · {p2} derrotas · {p3} empates',
+      slogan: 'Ejercita tu mente, mantén tu cerebro activo y fortalece la salud de la memoria.',
     },
     settings: {
       title: 'Ajustes',
@@ -249,6 +252,7 @@ export const translations = {
       settings: 'Paramètres',
       backgrounds: 'Fonds',
       stats: 'Contre l’IA: {p1} victoires · {p2} défaites · {p3} nuls',
+      slogan: 'Exercez votre esprit, gardez votre cerveau actif et renforcez la santé de la mémoire.',
     },
     settings: {
       title: 'Paramètres',
@@ -325,6 +329,7 @@ export const translations = {
       settings: 'Impostazioni',
       backgrounds: 'Sfondi',
       stats: 'Contro l’IA: {p1} vittorie · {p2} sconfitte · {p3} pareggi',
+      slogan: 'Esercita la tua mente, mantieni il cervello attivo e rafforza la salute della memoria.',
     },
     settings: {
       title: 'Impostazioni',
@@ -401,6 +406,7 @@ export const translations = {
       settings: '設定',
       backgrounds: '背景',
       stats: 'AI戦: {p1}勝 · {p2}負け · {p3}引き分け',
+      slogan: '脳を鍛え、脳を活性化し、記憶の健康を強化しましょう。',
     },
     settings: {
       title: '設定',
@@ -477,6 +483,7 @@ export const translations = {
       settings: '设置',
       backgrounds: '背景',
       stats: '对战AI: {p1}胜 · {p2}败 · {p3}平',
+      slogan: '锻炼你的思维，保持大脑活跃，增强记忆健康。',
     },
     settings: {
       title: '设置',
@@ -553,6 +560,7 @@ export const translations = {
       settings: '설정',
       backgrounds: '배경',
       stats: 'AI 대전: {p1}승 · {p2}패 · {p3}무승부',
+      slogan: '마음을 운동시키고 뇌를 활성화하며 기억 건강을 강화하세요.',
     },
     settings: {
       title: '설정',
@@ -629,6 +637,7 @@ export const translations = {
       settings: 'Einstellungen',
       backgrounds: 'Hintergründe',
       stats: 'Gegen KI: {p1} Siege · {p2} Niederlagen · {p3} Unentschieden',
+      slogan: 'Trainiere deinen Geist, halte dein Gehirn aktiv und stärke die Gesundheit deines Gedächtnisses.',
     },
     settings: {
       title: 'Einstellungen',

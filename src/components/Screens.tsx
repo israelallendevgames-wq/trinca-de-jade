@@ -30,7 +30,7 @@ export function Menu({ stats, go, language }: { stats: Stats; go: (a: string) =>
         <span>✕</span><span className="j">🀄</span><span>○</span>
       </div>
       <h1>Trinca de Jade</h1>
-      <p className="sub">Combine peças. Conquiste a linha.</p>
+      <p className="sub">{translations[language].menu.slogan}</p>
       <button className="btn campaign-entry" onClick={() => go('campaign')}>{t.play}</button>
       <button className="btn" onClick={() => go('challenge')}>{t.challenge}</button>
       <div className="row">
