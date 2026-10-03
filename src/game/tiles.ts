@@ -20,17 +20,20 @@ function rows(...specs: [number, number, number, number][]): [number, number, nu
 
 const classic = rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0],
   [2, 4, 10, 1], [4, 4, 10, 1], [3, 6, 8, 2]);
+export const CHALLENGE_LAYOUT: [number, number, number][] = [...classic, [0, 0, 0], [14, 0, 0]];
 
 export const CAMPAIGN_STAGES: CampaignStage[] = [
   { id: 1, title: 'Primeiros passos', subtitle: 'Um desenho aberto para aprender a combinar.', aiLevel: 'easy', layout: rows([2, 2, 12, 0], [4, 2, 12, 0], [3, 6, 8, 1]) },
   { id: 2, title: 'Ponte de jade', subtitle: 'Mais peças e uma primeira camada sobre o centro.', aiLevel: 'medium', layout: rows([0, 4, 10, 0], [2, 2, 12, 0], [4, 2, 12, 0], [6, 4, 10, 0], [3, 6, 8, 1]) },
-  { id: 3, title: 'Pátio fechado', subtitle: 'A IA passa a priorizar estrelas e bloquear suas opções.', aiLevel: 'medium', layout: rows([0, 4, 10, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 4, 10, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 6, 8, 2]) },
+  { id: 3, title: 'Pátio fechado', subtitle: 'Peças especiais premiam escolhas cuidadosas.', aiLevel: 'medium', layout: rows([0, 4, 10, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 4, 10, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 6, 8, 2]) },
   { id: 4, title: 'Torre das lanternas', subtitle: 'Camadas sobrepostas reduzem os pares disponíveis.', aiLevel: 'hard', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 6, 8, 2], [3, 4, 10, 3]) },
-  { id: 5, title: 'Jardim suspenso', subtitle: 'A IA antecipa melhor as peças que você poderá liberar.', aiLevel: 'hard', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 6, 8, 3]) },
+  { id: 5, title: 'Jardim suspenso', subtitle: 'Mais camadas exigem planejar quais peças liberar.', aiLevel: 'hard', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 6, 8, 3]) },
   { id: 6, title: 'Pagode antigo', subtitle: 'Quatro níveis de peças e escolhas cada vez mais calculadas.', aiLevel: 'expert', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 6, 8, 3], [3, 6, 8, 4]) },
-  { id: 7, title: 'Dragão de jade', subtitle: 'A IA escolhe pares com leitura estratégica do tabuleiro.', aiLevel: 'expert', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 4, 10, 3], [3, 6, 8, 4]) },
-  { id: 8, title: 'Trono imperial', subtitle: 'Cinco camadas e a IA no auge de sua estratégia.', aiLevel: 'master', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 4, 10, 3], [3, 6, 8, 4], [5, 8, 10, 2]) },
+  { id: 7, title: 'Dragão de jade', subtitle: 'Uma estrutura compacta exige visão dos próximos pares.', aiLevel: 'expert', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 4, 10, 3], [3, 6, 8, 4]) },
+  { id: 8, title: 'Trono imperial', subtitle: 'Cinco camadas e combinações cada vez mais exigentes.', aiLevel: 'master', layout: rows([0, 2, 12, 0], [2, 0, 14, 0], [4, 0, 14, 0], [6, 2, 12, 0], [2, 4, 10, 1], [4, 4, 10, 1], [3, 4, 10, 2], [3, 4, 10, 3], [3, 6, 8, 4], [5, 8, 10, 2]) },
 ];
+
+export const campaignDifficulty = (stage: number) => Math.round((stage - 1) * 100 / (CAMPAIGN_STAGES.length - 1));
 
 export const BOARD_W = 16, BOARD_H = 8;
 
@@ -74,8 +77,8 @@ function assign(ts: Tile[], bag: string[]): Tile[] | null {
 }
 const retry = (ts: Tile[], bag: string[]) => { for (let i = 0; i < 300; i++) { const r = assign(ts, bag); if (r) return r; } return ts; };
 
-export function newBoard(stage?: number): Tile[] {
-  const coords = stage === undefined ? classic : (CAMPAIGN_STAGES[stage - 1] ?? CAMPAIGN_STAGES[0]).layout;
+export function newBoard(stage?: number, layout?: [number, number, number][]): Tile[] {
+  const coords = layout ?? (stage === undefined ? classic : (CAMPAIGN_STAGES[stage - 1] ?? CAMPAIGN_STAGES[0]).layout);
   const base: Tile[] = coords.map(([x, y, z], id) => ({ id, x, y, z, sym: '', removed: false }));
   const bag = [SP.star, SP.star, SP.star, SP.brk, SP.brk];
   for (let i = 0; bag.length < base.length / 2; i++) bag.push(NORMAL[i % NORMAL.length]);

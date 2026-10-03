@@ -9,6 +9,16 @@ function tone(f: number, at: number, type: OscillatorType = 'sine', d = 0.14, v 
   o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
   o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d);
 }
+function clack(at: number, volume: number, frequency: number) {
+  if (!ctx) return;
+  const duration = 0.055, length = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate), samples = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) samples[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.006));
+  const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain(), start = ctx.currentTime + at;
+  filter.type = 'bandpass'; filter.frequency.value = frequency; filter.Q.value = 1.2;
+  gain.gain.setValueAtTime(volume, start); gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  source.buffer = buffer; source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); source.start(start); source.stop(start + duration);
+}
 type Note = [number, number, OscillatorType?];
 const SEQ: Record<string, Note[]> = {
   select: [[660, 0]], match: [[523, 0], [784, 0.08]], place: [[392, 0, 'triangle'], [588, 0.07, 'triangle']],
@@ -16,10 +26,11 @@ const SEQ: Record<string, Note[]> = {
   win: [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.36]], draw: [[400, 0], [400, 0.15]],
 };
 export function sfx(name: string) {
-  if (!on || !SEQ[name]) return;
+  if (!on || (!SEQ[name] && name !== 'domino')) return;
   try {
     ctx = ctx ?? new (window.AudioContext || (window as any).webkitAudioContext)();
     if (ctx.state === 'suspended') void ctx.resume();
+    if (name === 'domino') { clack(0, 0.2, 760); clack(0.045, 0.14, 1080); return; }
     SEQ[name].forEach(([f, at, ty]) => tone(f, at, ty ?? 'sine'));
   } catch { /* sem áudio */ }
 }

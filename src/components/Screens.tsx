@@ -1,6 +1,6 @@
 import { Level } from '../game/types';
 import { Settings, Stats } from '../game/store';
-import { CAMPAIGN_STAGES } from '../game/tiles';
+import { CAMPAIGN_STAGES, campaignDifficulty } from '../game/tiles';
 
 export function Menu({ stats, go }: { stats: Stats; go: (a: string) => void }) {
   const st = stats.ai;
@@ -11,10 +11,8 @@ export function Menu({ stats, go }: { stats: Stats; go: (a: string) => void }) {
       </div>
       <h1>Trinca de Jade</h1>
       <p className="sub">Combine peças. Conquiste a linha.</p>
-      <button className="btn" onClick={() => go('play')}>Jogar</button>
-      <button className="btn" onClick={() => go('ailevel')}>Jogar contra IA</button>
-      <button className="btn campaign-entry" onClick={() => go('campaign')}>🏯 Campanha por fases</button>
-      <button className="btn" onClick={() => go('pvp')}>Dois jogadores</button>
+      <button className="btn campaign-entry" onClick={() => go('campaign')}>Jogar</button>
+      <button className="btn" onClick={() => go('challenge')}>Desafio contra IA</button>
       <button className="btn ghost" onClick={() => go('training')}>Modo treino</button>
       <div className="row">
         <button className="btn ghost" onClick={() => go('how')}>Como jogar</button>
@@ -25,10 +23,9 @@ export function Menu({ stats, go }: { stats: Stats; go: (a: string) => void }) {
   );
 }
 
-export function CampaignPick({ unlocked, completed, start, back }: {
-  unlocked: number; completed: boolean; start: (stage: number) => void; back: () => void;
+export function CampaignPick({ unlocked, completed, aiDifficulty, start, back }: {
+  unlocked: number; completed: boolean; aiDifficulty: number; start: (stage: number) => void; back: () => void;
 }) {
-  const names: Record<Level, string> = { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', expert: 'Especialista', master: 'Mestre' };
   return (
     <main className="screen menu campaign-screen">
       <h2>Campanha</h2>
@@ -44,7 +41,7 @@ export function CampaignPick({ unlocked, completed, start, back }: {
             <button key={stage.id} className={`stage-card ${locked ? 'locked' : ''} ${done ? 'done' : ''}`} disabled={locked}
               onClick={() => start(stage.id)}>
               <span className="stage-number">{done ? '✓' : locked ? '🔒' : String(stage.id).padStart(2, '0')}</span>
-              <span className="stage-copy"><b>{stage.title}</b><small>{stage.subtitle}</small><small>IA {names[stage.aiLevel]} · {Math.max(...stage.layout.map((p) => p[2])) + 1} camadas · {stage.layout.length} peças</small></span>
+              <span className="stage-copy"><b>{stage.title}</b><small>{stage.subtitle}</small><small>Nível {stage.id} · Dificuldade {campaignDifficulty(stage.id)}/100 · {stage.layout.length} peças</small></span>
               <span className="stage-state">{done ? 'Concluída' : locked ? 'Bloqueada' : 'Jogar'}</span>
             </button>
           );
